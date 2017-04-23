@@ -1,0 +1,5 @@
+- [x] x轴随nroll旋转 
+- [ ] y轴随f(pitch,yaw)旋转 f = a*pitch+bsin(roll)(yaw-baseyaw)+(sin(roll)+pitch)d平放极限更小
+- [ ] 基准baseyaw
+- [ ] 到极限后的回归
+- [ ] sin(roll)yaw + (1-sin(roll))pitch
