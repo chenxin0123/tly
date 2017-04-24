@@ -27,9 +27,11 @@
     v.contentMode = UIViewContentModeScaleAspectFill;
     
     __block CGFloat byaw = 0;
+    __block CGFloat bpitch = 0;
     __block BOOL useYaw = NO;
-    __block CGFloat delRoll = 0.0;
     __block CGFloat lastTy = -998;
+    CGFloat maxRotateUseYaw = M_PI_4;
+    CGFloat maxRotateNotUseYaw = M_PI_4 * 4 / 3;
     _manager = [[CMMotionManager alloc] init];
     [_manager startDeviceMotionUpdatesToQueue:[NSOperationQueue mainQueue] withHandler:^(CMDeviceMotion * _Nullable motion, NSError * _Nullable error) {
         CMAttitude *attr = motion.attitude;
@@ -45,25 +47,25 @@
         BOOL flag = fabs(roll) < M_PI_4;
         if (flag) {
             if (useYaw) {
+                bpitch = lastTy - pitch;
                 useYaw = NO;
             }
-            ty = pitch + delRoll;
+            ty = pitch + bpitch;
+            ty = [self limitTy:ty within:maxRotateNotUseYaw];
             NSLog(@"pitch ty%@",@(ty * 180 / M_PI));
         } else {
             if (!useYaw) {
                 useYaw = YES;
-                byaw = -lastTy + yaw;
+                byaw = lastTy - yaw;
                 NSLog(@"byaw = %@ - %@ = %@",@(yaw * 180 / M_PI),@(pitch * 180 / M_PI),@(byaw * 180 / M_PI));
             }
-            ty = (yaw - byaw);
-            delRoll = ty;
+            ty = yaw + byaw;
+            ty = [self limitTy:ty within:MAX(maxRotateUseYaw, fabs(lastTy))];
             NSLog(@"yaw ty = %@",@(ty * 180 / M_PI));
         }
         roll *= f;
         
-//        pitch *= f;
-//        yaw *= f;
-//        ty = ty < 0 ? MAX(-M_PI_4, ty) : MIN(ty, M_PI_4);
+
         if (fabs((ty - lastTy)* 180 / M_PI) > 10 && lastTy != -998) {
             NSLog(@"jump");
         }
@@ -80,8 +82,12 @@
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged:) name:UIDeviceOrientationDidChangeNotification object:nil];
     
-   }
+}
 
+- (CGFloat)limitTy:(CGFloat)ty within:(CGFloat)limit {
+    CGFloat fb = MIN(fabs(ty), limit);
+    return ty > 0 ? fb : -fb;
+}
 
 - (void)orientationChanged:(NSNotification *)notification
 {
